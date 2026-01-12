@@ -40,6 +40,7 @@ def register_builtin_ocr_engines() -> None:
         DeepSeekOCRModel,
         GotOCR2Model,
         HunyuanOCRModel,
+        MinerUModel,  # MinerU uses its own backend but registered here for default engine
         PaddleOCRVLModel,
     ]
     SUPPORTED_ENGINES["vllm"] = [
@@ -48,3 +49,4 @@ def register_builtin_ocr_engines() -> None:
     ]
     SUPPORTED_ENGINES["mlx"] = [MLXDeepSeekOCRModel]
     SUPPORTED_ENGINES["mineru"] = [MinerUModel]
+
