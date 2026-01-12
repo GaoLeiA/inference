@@ -2326,12 +2326,37 @@ class RESTfulAPI(CancelMixin):
                 parsed_kwargs = {}
             request_id = parsed_kwargs.get("request_id")
             self._add_running_task(request_id)
-            im = Image.open(image.file)
-            text = await model_ref.ocr(
-                image=im,
-                **parsed_kwargs,
-            )
-            return Response(content=text, media_type="text/plain")
+            
+            # Read file content first
+            file_content = await image.read()
+            filename = image.filename or ""
+            
+            # Check if the file is a PDF or image
+            is_pdf = filename.lower().endswith(".pdf") or file_content[:4] == b"%PDF"
+            
+            if is_pdf:
+                # For PDF files, pass raw bytes directly
+                # Models like MinerU can handle PDF bytes
+                logger.info(f"Processing PDF file: {filename}")
+                text = await model_ref.ocr(
+                    image=file_content,  # Pass raw bytes for PDF
+                    **parsed_kwargs,
+                )
+            else:
+                # For image files, open with PIL as before
+                import io
+                im = Image.open(io.BytesIO(file_content))
+                text = await model_ref.ocr(
+                    image=im,
+                    **parsed_kwargs,
+                )
+            
+            # Handle different response types
+            if isinstance(text, dict):
+                import json as json_module
+                return Response(content=json_module.dumps(text, ensure_ascii=False), media_type="application/json")
+            else:
+                return Response(content=str(text), media_type="text/plain")
         except asyncio.CancelledError:
             err_str = f"The request has been cancelled: {request_id}"
             logger.error(err_str)
