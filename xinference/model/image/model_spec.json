@@ -1442,11 +1442,11 @@
     },
     "model_src": {
       "huggingface": {
-        "model_id": "opendatalab/MinerU",
+        "model_id": "opendatalab/MinerU2.5-2509-1.2B",
         "model_revision": "main"
       },
       "modelscope": {
-        "model_id": "opendatalab/MinerU",
+        "model_id": "opendatalab/MinerU2.5-2509-1.2B",
         "model_revision": "master"
       }
     },

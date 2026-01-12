@@ -162,10 +162,6 @@ def create_ocr_model_instance(
     from .cache_manager import ImageCacheManager
     from .ocr.ocr_family import check_engine_by_model_name_and_engine
 
-    if not model_path:
-        cache_manager = ImageCacheManager(model_spec)
-        model_path = cache_manager.cache()
-
     if model_engine is None:
         model_engine = "transformers"
 
@@ -174,6 +170,15 @@ def create_ocr_model_instance(
     ocr_cls = check_engine_by_model_name_and_engine(
         model_engine, model_spec.model_name, model_format, quantization
     )
+    
+    # Check if the OCR model class requires model download
+    # Some models (like MinerU) manage their own model downloads
+    skip_download = getattr(ocr_cls, "skip_model_download", False)
+    
+    if not model_path and not skip_download:
+        cache_manager = ImageCacheManager(model_spec)
+        model_path = cache_manager.cache()
+
     return ocr_cls(
         model_uid,
         model_path,

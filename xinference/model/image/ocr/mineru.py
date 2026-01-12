@@ -40,9 +40,15 @@ class MinerUModel(OCRModel):
     - Formula extraction (LaTeX format)
     - Multi-language OCR (109 languages)
     - Image extraction with descriptions
+    
+    Note: MinerU manages its own model downloads through the mineru package.
+    No external model download from HuggingFace/ModelScope is required.
     """
 
     required_libs = ("mineru",)
+    
+    # MinerU manages its own models, no need for xinference to download
+    skip_model_download = True
 
     @classmethod
     def match(cls, model_family: "ImageModelFamilyV2") -> bool:
@@ -58,16 +64,20 @@ class MinerUModel(OCRModel):
     ):
         self.model_family = model_spec
         self._model_uid = model_uid
+        # MinerU doesn't use model_path - it manages models internally
         self._model_path = model_path
         self._device = device
         # Model info
         self._model_spec = model_spec
         self._abilities = model_spec.model_ability if model_spec else ["ocr", "document-parsing"]
         self._kwargs = kwargs
-        # MinerU specific settings
-        self._backend = kwargs.get("backend", "hybrid-auto-engine")
-        self._parse_method = kwargs.get("parse_method", "auto")
-        self._language = kwargs.get("language", "ch")
+        # MinerU specific settings from default_model_config or kwargs
+        default_config = {}
+        if model_spec and hasattr(model_spec, 'default_model_config') and model_spec.default_model_config:
+            default_config = model_spec.default_model_config
+        self._backend = kwargs.get("backend", default_config.get("backend", "hybrid-auto-engine"))
+        self._parse_method = kwargs.get("parse_method", default_config.get("parse_method", "auto"))
+        self._language = kwargs.get("language", default_config.get("language", "ch"))
         self._loaded = False
 
     @property
