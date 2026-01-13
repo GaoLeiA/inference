@@ -408,14 +408,54 @@ class GradioInterface:
                     bot[-1][1] = history[-1]["content"]
                     yield history, bot
 
-        def add_text(history, bot, text, image, video, audio):
+        def add_text(history, bot, text, image, video, audio, pdf_file):
             logger.debug(
-                "Add text, text: %s, image: %s, video: %s, audio: %s",
+                "Add text, text: %s, image: %s, video: %s, audio: %s, pdf: %s",
                 text,
                 image,
                 video,
                 audio,
+                pdf_file,
             )
+            
+            # Handle PDF file - send directly to MinerU VLM (no conversion needed)
+            if pdf_file:
+                try:
+                    # Read PDF file as bytes and encode to base64
+                    with open(pdf_file, 'rb') as f:
+                        pdf_bytes = f.read()
+                    pdf_b64_str = base64.b64encode(pdf_bytes).decode()
+                    
+                    # Get filename for display
+                    import os
+                    pdf_filename = os.path.basename(pdf_file)
+                    
+                    display_content = f'📄 <b>{pdf_filename}</b><br/>{text}'
+                    message = {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": text},
+                            {
+                                "type": "file",
+                                "file": {
+                                    "url": f"data:application/pdf;base64,{pdf_b64_str}",
+                                    "filename": pdf_filename,
+                                }
+                            },
+                        ],
+                    }
+                    
+                    history = history + [message]
+                    bot = bot + [[display_content, None]]
+                    return history, bot, "", None, None, None, None
+                except Exception as e:
+                    logger.error(f"Error processing PDF: {e}")
+                    display_content = f"[Error processing PDF: {e}]\\n{text}"
+                    message = {"role": "user", "content": text}
+                    history = history + [message]
+                    bot = bot + [[display_content, None]]
+                    return history, bot, "", None, None, None, None
+            
             if image:
                 buffered = BytesIO()
                 with PIL.Image.open(image) as img:
@@ -502,11 +542,11 @@ class GradioInterface:
                 message = {"role": "user", "content": text}
             history = history + [message]
             bot = bot + [[display_content, None]]
-            return history, bot, "", None, None, None
+            return history, bot, "", None, None, None, None
 
         def clear_history():
             logger.debug("Clear history.")
-            return [], None, "", None, None, None
+            return [], None, "", None, None, None, None
 
         def update_button(text):
             return gr.update(interactive=bool(text))
@@ -558,9 +598,15 @@ class GradioInterface:
                     if has_vision:
                         imagebox = gr.Image(type="filepath")
                         videobox = gr.Video()
+                        pdfbox = gr.File(
+                            label="PDF Document",
+                            file_types=[".pdf"],
+                            type="filepath",
+                        )
                     else:
                         imagebox = gr.Image(type="filepath", visible=False)
                         videobox = gr.Video(visible=False)
+                        pdfbox = gr.File(visible=False)
 
                     if has_audio:
                         audiobox = gr.Audio(
@@ -602,8 +648,8 @@ class GradioInterface:
 
             textbox.submit(
                 add_text,
-                [state, chatbot, textbox, imagebox, videobox, audiobox],
-                [state, chatbot, textbox, imagebox, videobox, audiobox],
+                [state, chatbot, textbox, imagebox, videobox, audiobox, pdfbox],
+                [state, chatbot, textbox, imagebox, videobox, audiobox, pdfbox],
                 queue=False,
             ).then(
                 predict,
@@ -613,8 +659,8 @@ class GradioInterface:
 
             submit_btn.click(
                 add_text,
-                [state, chatbot, textbox, imagebox, videobox, audiobox],
-                [state, chatbot, textbox, imagebox, videobox, audiobox],
+                [state, chatbot, textbox, imagebox, videobox, audiobox, pdfbox],
+                [state, chatbot, textbox, imagebox, videobox, audiobox, pdfbox],
                 queue=False,
             ).then(
                 predict,
@@ -625,7 +671,7 @@ class GradioInterface:
             clear_btn.click(
                 clear_history,
                 None,
-                [state, chatbot, textbox, imagebox, videobox, audiobox],
+                [state, chatbot, textbox, imagebox, videobox, audiobox, pdfbox],
                 queue=False,
             )
 
