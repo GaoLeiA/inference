@@ -1866,6 +1866,11 @@ class VLLMMultiModel(VLLMModel, ChatModelMixin):
                 process_vision_info,
             )
 
+            # Pre-process messages to handle base64 data URIs BEFORE transform
+            temp_files = []
+            if "vision" in self.model_family.model_ability or "omni" in self.model_family.model_ability:
+                self._handle_base64_images(messages, temp_files)
+
             messages = self._transform_messages(messages)
 
             chat_template_kwargs = (
@@ -1886,21 +1891,9 @@ class VLLMMultiModel(VLLMModel, ChatModelMixin):
             elif "audio" in self.model_family.model_ability:
                 audios = process_audio_info(messages, use_audio_in_video=False)
             elif "vision" in self.model_family.model_ability:
-                # Pre-process messages to handle base64
-                temp_files = []
-                try:
-                    self._handle_base64_images(messages, temp_files)
-                    images, videos, video_kwargs = process_vision_info(  # type: ignore
-                        messages, return_video_kwargs=True
-                    )
-                except Exception:
-                    # If processing failed, verify if we should cleanup
-                    raise
-                finally:
-                    # Ideally cleanup temp files if they are not needed anymore
-                    # process_vision_info likely loads them.
-                    # leaving them for OS cleanup or explicit deletion if we are sure.
-                    pass
+                images, videos, video_kwargs = process_vision_info(  # type: ignore
+                    messages, return_video_kwargs=True
+                )
 
             prompt = self.get_full_context(
                 messages, self.model_family.chat_template, **full_context_kwargs
