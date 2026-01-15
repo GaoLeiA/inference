@@ -436,10 +436,9 @@ class GradioInterface:
                         "content": [
                             {"type": "text", "text": text},
                             {
-                                "type": "file",
-                                "file": {
+                                "type": "image_url",
+                                "image_url": {
                                     "url": f"data:application/pdf;base64,{pdf_b64_str}",
-                                    "filename": pdf_filename,
                                 }
                             },
                         ],
