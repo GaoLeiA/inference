@@ -70,24 +70,39 @@ def start_xinference_server(host: str = "0.0.0.0", port: int = 9997) -> subproce
     if sys.platform == "win32":
         kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
     
+    # Try xinference-local command first
     process = subprocess.Popen(
-        [sys.executable, "-m", "xinference.deploy.cmdline", "local", 
-         "--host", host, "--port", str(port)],
+        ["xinference-local", "--host", host, "--port", str(port)],
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=subprocess.STDOUT,  # Merge stderr into stdout for debugging
         **kwargs
     )
     
     # Wait for server to start
     endpoint = f"http://localhost:{port}"
-    for i in range(30):  # Wait up to 30 seconds
+    for i in range(60):  # Wait up to 60 seconds
         time.sleep(1)
+        
+        # Check if process died
+        if process.poll() is not None:
+            # Process died, get output for debugging
+            output, _ = process.communicate()
+            print(f"Xinference server failed to start!")
+            print(f"Output: {output.decode('utf-8', errors='ignore')}")
+            raise RuntimeError("Xinference server process terminated unexpectedly")
+        
         if check_xinference_server(endpoint):
             print(f"Xinference server started successfully on port {port}")
             return process
         print(f"Waiting for server to start... ({i+1}s)")
     
-    raise RuntimeError("Xinference server failed to start within 30 seconds")
+    # Timeout - kill process and show output
+    process.terminate()
+    output, _ = process.communicate()
+    print(f"Server output: {output.decode('utf-8', errors='ignore')}")
+    raise RuntimeError("Xinference server failed to start within 60 seconds")
+
+
 
 
 def launch_mineru_model(
