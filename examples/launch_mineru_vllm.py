@@ -110,6 +110,7 @@ def launch_mineru_model(
     model_name: str = "mineru-vlm",
     size_in_billions: str = "1_2",
     gpu_memory_utilization: float = 0.9,
+    timeout: int = 600,  # 10 minutes timeout
 ) -> str:
     """
     Launch the MinerU VLM model via Xinference with vLLM engine.
@@ -119,39 +120,83 @@ def launch_mineru_model(
         model_name: Name of the model (mineru-vlm)
         size_in_billions: Model size parameter
         gpu_memory_utilization: GPU memory fraction to use
+        timeout: Maximum seconds to wait for model launch
     
     Returns:
         model_uid: The unique identifier for the launched model
     """
     from xinference.client import Client
+    import threading
     
     client = Client(endpoint)
     
     # Check if model is already running
+    print("Checking for existing model instances...")
     running_models = client.list_models()
     for model in running_models:
         if model.get("model_name") == model_name:
             model_uid = model["id"]
-            print(f"Model {model_name} is already running with uid: {model_uid}")
+            print(f"✓ Model {model_name} is already running with uid: {model_uid}")
             return model_uid
     
     # Launch the model with vLLM engine
-    print(f"Launching {model_name} with vLLM engine...")
-    print(f"  - Model size: {size_in_billions}B")
+    print(f"\nLaunching {model_name} with vLLM engine...")
+    print(f"  - Model: opendatalab/MinerU2.5-2509-1.2B")
+    print(f"  - Size: {size_in_billions}B")
     print(f"  - GPU memory utilization: {gpu_memory_utilization}")
     print(f"  - Engine: vllm")
+    print(f"\nThis may take several minutes (downloading + loading model)...")
+    print(f"Please be patient...\n")
     
-    model_uid = client.launch_model(
-        model_name=model_name,
-        model_type="LLM",
-        model_engine="vllm",
-        model_size_in_billions=size_in_billions,
-        gpu_memory_utilization=gpu_memory_utilization,
-    )
+    # Use threading to show progress while waiting
+    model_uid = None
+    error = None
     
-    print(f"Model launched successfully!")
+    def launch_model_thread():
+        nonlocal model_uid, error
+        try:
+            model_uid = client.launch_model(
+                model_name=model_name,
+                model_type="LLM",
+                model_engine="vllm",
+                model_size_in_billions=size_in_billions,
+                gpu_memory_utilization=gpu_memory_utilization,
+            )
+        except Exception as e:
+            error = e
+    
+    # Start launch in background thread
+    thread = threading.Thread(target=launch_model_thread, daemon=True)
+    thread.start()
+    
+    # Show progress indicators
+    dots = 0
+    waited = 0
+    while thread.is_alive() and waited < timeout:
+        time.sleep(2)
+        waited += 2
+        dots = (dots + 1) % 4
+        progress_str = "." * dots + " " * (3 - dots)
+        print(f"\r  [Loading{progress_str}] Elapsed: {waited}s / {timeout}s", end="", flush=True)
+    
+    print()  # New line
+    
+    # Check result
+    if error:
+        raise RuntimeError(f"Failed to launch model: {error}")
+    
+    if model_uid is None:
+        raise TimeoutError(
+            f"Model launch timed out after {timeout} seconds. "
+            f"The model may still be loading. Check Xinference logs for details."
+        )
+    
+    print(f"\n✓ Model launched successfully!")
     print(f"  - Model UID: {model_uid}")
     print(f"  - API Endpoint: {endpoint}/v1")
+    
+    return model_uid
+
     
     return model_uid
 
