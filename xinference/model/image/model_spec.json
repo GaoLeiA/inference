@@ -1419,5 +1419,38 @@
     },
     "featured": true,
     "updated_at": 1767599235
+  },
+  {
+    "version": 2,
+    "model_name": "MinerU",
+    "model_family": "ocr",
+    "model_ability": [
+      "ocr",
+      "document-parsing"
+    ],
+    "virtualenv": {
+      "packages": [
+        "mineru[all]>=2.5.0",
+        "#system_numpy#",
+        "#system_torch#"
+      ]
+    },
+    "default_model_config": {
+      "backend": "hybrid-auto-engine",
+      "parse_method": "auto",
+      "language": "ch"
+    },
+    "model_src": {
+      "huggingface": {
+        "model_id": "opendatalab/MinerU2.5-2509-1.2B",
+        "model_revision": "main"
+      },
+      "modelscope": {
+        "model_id": "opendatalab/MinerU2.5-2509-1.2B",
+        "model_revision": "master"
+      }
+    },
+    "updated_at": 1736668800,
+    "featured": true
   }
 ]
