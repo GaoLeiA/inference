@@ -57,16 +57,38 @@ def check_xinference_server(endpoint: str) -> bool:
 
 
 def check_model_running(endpoint: str, model_name: str = "mineru-vlm") -> Optional[str]:
-    """Check if the model is already running and return its UID."""
+    """
+    Check if the model is already running and return its UID.
+    
+    This function checks for ANY instance of the model with the given name,
+    including models with replicas. If found, returns the model ID.
+    """
     try:
         from xinference.client import Client
         client = Client(endpoint)
-        for model in client.list_models():
-            if model.get("model_name") == model_name:
-                return model["id"]
-    except Exception:
-        pass
-    return None
+        models = client.list_models()
+        
+        print(f"Checking for existing '{model_name}' models...")
+        print(f"  Found {len(models)} total model(s) running")
+        
+        for model in models:
+            model_id = model.get("id")
+            m_name = model.get("model_name")
+            replica = model.get("replica", 1)
+            
+            print(f"  - Model: {model_id} (name: {m_name}, replica: {replica})")
+            
+            if m_name == model_name:
+                print(f"  ✓ Found existing model: {model_id}")
+                return model_id
+        
+        print(f"  ✗ No existing '{model_name}' model found")
+        return None
+        
+    except Exception as e:
+        print(f"  ⚠ Error checking models: {e}")
+        return None
+
 
 
 def launch_model_on_xinference(
