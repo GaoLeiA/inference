@@ -66,21 +66,31 @@ def check_model_running(endpoint: str, model_name: str = "mineru-vlm") -> Option
     try:
         from xinference.client import Client
         client = Client(endpoint)
-        models = client.list_models()
+        
+        # list_models() returns a list of model UIDs (strings)
+        model_uids = client.list_models()
         
         print(f"Checking for existing '{model_name}' models...")
-        print(f"  Found {len(models)} total model(s) running")
+        print(f"  Found {len(model_uids)} total model(s) running")
         
-        for model in models:
-            model_id = model.get("id")
-            m_name = model.get("model_name")
-            replica = model.get("replica", 1)
-            
-            print(f"  - Model: {model_id} (name: {m_name}, replica: {replica})")
-            
-            if m_name == model_name:
-                print(f"  ✓ Found existing model: {model_id}")
-                return model_id
+        for model_uid in model_uids:
+            try:
+                # Get model details using get_model()
+                model_handle = client.get_model(model_uid)
+                
+                # model_handle has properties like model_name, model_type, etc.
+                m_name = getattr(model_handle, 'model_name', None)
+                m_type = getattr(model_handle, 'model_type', None)
+                
+                print(f"  - Model UID: {model_uid} (name: {m_name}, type: {m_type})")
+                
+                if m_name == model_name:
+                    print(f"  ✓ Found existing model: {model_uid}")
+                    return model_uid
+                    
+            except Exception as e:
+                print(f"  ⚠ Error getting details for {model_uid}: {e}")
+                continue
         
         print(f"  ✗ No existing '{model_name}' model found")
         return None
