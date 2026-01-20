@@ -85,10 +85,11 @@ def launch_model_on_xinference(
     
     client = Client(endpoint)
     
-    # Check if model already exists
+    # Check if model already exists (including replicas)
     existing_uid = check_model_running(endpoint, model_name)
     if existing_uid:
-        print(f"Model {model_name} is already running (UID: {existing_uid})")
+        print(f"✓ Model {model_name} is already running (UID: {existing_uid})")
+        print(f"  Skipping model launch, using existing instance")
         return existing_uid
     
     print(f"Launching {model_name} with vLLM engine...")
@@ -114,6 +115,7 @@ def run_mineru_cli(
     backend: str = "hybrid-http-client",
     language: str = "ch",
     verbose: bool = True,
+    model_name: str = "mineru-vlm",  # Add model_name parameter
 ) -> bool:
     """
     Run MinerU CLI with HTTP client mode to process PDF.
@@ -125,6 +127,7 @@ def run_mineru_cli(
         backend: MinerU backend (hybrid-http-client, vlm-http-client)
         language: OCR language (ch, en, etc.)
         verbose: Print detailed output
+        model_name: Model name to use (for MINERU_VL_MODEL_NAME env var)
         
     Returns:
         True if successful, False otherwise
@@ -148,13 +151,19 @@ def run_mineru_cli(
         print(f"  Backend: {backend}")
         print(f"  Server URL: {server_url}")
         print(f"  Language: {language}")
+        print(f"  Model Name: {model_name}")
         print(f"\nCommand: {' '.join(cmd)}\n")
+    
+    # Set environment variable to specify model name
+    env = os.environ.copy()
+    env['MINERU_VL_MODEL_NAME'] = model_name
     
     try:
         result = subprocess.run(
             cmd,
             capture_output=not verbose,
             text=True,
+            env=env,  # Pass environment with MINERU_VL_MODEL_NAME
         )
         
         if result.returncode == 0:
