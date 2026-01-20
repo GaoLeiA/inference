@@ -32,21 +32,17 @@ def recognize_invoice(image_path, model_uid=None):
     if model_uid is None:
         try:
             models = client.list_models()
-            for model in models:
-                if model.get('model_name') == 'mineru-vlm':
-                    model_uid = model['model_uid']
-                    print(f"✓ 找到已启动的模型: {model_uid}")
-                    break
+            print("已启动的模型:", list(models.keys()))
             
-            if model_uid is None:
+            # list_models() 返回的是 {model_name: model_info} 字典
+            if 'mineru-vlm' in models:
+                model_uid = models['mineru-vlm']['id']
+                print(f"✓ 找到已启动的模型: {model_uid}")
+            else:
                 print("× 未找到已启动的 mineru-vlm 模型")
-                print("正在启动 mineru-vlm 模型...")
-                model_uid = client.launch_model(
-                    model_name="mineru-vlm",
-                    model_type="LLM",
-                    model_engine="vllm"
-                )
-                print(f"✓ 模型已启动: {model_uid}")
+                print("请先手动启动模型：")
+                print("  xinference launch --model-name mineru-vlm --model-engine vllm --model-type LLM")
+                raise ValueError("未找到 mineru-vlm 模型，请先启动模型")
         except Exception as e:
             print(f"错误: {e}")
             raise

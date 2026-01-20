@@ -58,30 +58,25 @@ def encode_image_to_base64(image_path):
 
 
 def get_or_launch_model(client, model_name="mineru-vlm"):
-    """获取或启动模型"""
-    # 尝试找到已启动的模型
+    """获取已启动的模型"""
     try:
         models = client.list_models()
-        for model in models:
-            if model.get('model_name') == model_name:
-                model_uid = model['model_uid']
-                print(f"✓ 找到已启动的模型: {model_uid}")
-                return client.get_model(model_uid)
+        print("已启动的模型:", list(models.keys()))
+        
+        # list_models() 返回的是 {model_name: model_info} 字典
+        if model_name in models:
+            model_uid = models[model_name]['id']
+            print(f"✓ 找到已启动的模型: {model_uid}")
+            return client.get_model(model_uid)
+        else:
+            print(f"✗ 未找到已启动的 {model_name} 模型")
+            print("请先手动启动模型：")
+            print(f"  xinference launch --model-name {model_name} --model-engine vllm --model-type LLM")
+            raise ValueError(f"未找到 {model_name} 模型，请先启动模型")
+    except ValueError:
+        raise
     except Exception as e:
-        print(f"警告: 列出模型时出错: {e}")
-    
-    # 如果没找到，启动新模型
-    print(f"正在启动 {model_name} 模型...")
-    try:
-        model_uid = client.launch_model(
-            model_name=model_name,
-            model_type="LLM",
-            model_engine="vllm"
-        )
-        print(f"✓ 模型已启动: {model_uid}")
-        return client.get_model(model_uid)
-    except Exception as e:
-        print(f"✗ 启动模型失败: {e}")
+        print(f"✗ 获取模型失败: {e}")
         raise
 
 
