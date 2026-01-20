@@ -78,18 +78,38 @@ def check_model_running(endpoint: str, model_name: str = "mineru-vlm") -> Option
                 # Get model details using get_model()
                 model_handle = client.get_model(model_uid)
                 
-                # model_handle has properties like model_name, model_type, etc.
-                m_name = getattr(model_handle, 'model_name', None)
-                m_type = getattr(model_handle, 'model_type', None)
+                # Try multiple ways to get model_name
+                m_name = None
                 
-                print(f"  - Model UID: {model_uid} (name: {m_name}, type: {m_type})")
+                # Method 1: Direct attribute access
+                if hasattr(model_handle, 'model_name'):
+                    m_name = model_handle.model_name
                 
-                if m_name == model_name:
+                # Method 2: Try _model_name (private attribute)
+                elif hasattr(model_handle, '_model_name'):
+                    m_name = model_handle._model_name
+                
+                # Method 3: Check if it has a dict representation
+                elif hasattr(model_handle, '__dict__'):
+                    m_name = model_handle.__dict__.get('model_name')
+                
+                # Method 4: For debugging - just check if UID matches the model_name
+                # This works because xinference uses model_name as UID for single instance
+                if model_uid == model_name or model_uid.startswith(model_name):
+                    m_name = model_name  # Assume it's the right model
+                
+                print(f"  - Model UID: {model_uid} (detected name: {m_name})")
+                
+                if m_name == model_name or model_uid == model_name or model_uid.startswith(model_name + "-"):
                     print(f"  ✓ Found existing model: {model_uid}")
                     return model_uid
                     
             except Exception as e:
                 print(f"  ⚠ Error getting details for {model_uid}: {e}")
+                # Even if we get error, if UID matches, use it
+                if model_uid == model_name or model_uid.startswith(model_name + "-"):
+                    print(f"  ✓ Found existing model by UID match: {model_uid}")
+                    return model_uid
                 continue
         
         print(f"  ✗ No existing '{model_name}' model found")
@@ -98,7 +118,6 @@ def check_model_running(endpoint: str, model_name: str = "mineru-vlm") -> Option
     except Exception as e:
         print(f"  ⚠ Error checking models: {e}")
         return None
-
 
 
 def launch_model_on_xinference(
