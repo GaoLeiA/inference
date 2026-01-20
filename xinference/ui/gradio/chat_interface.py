@@ -408,14 +408,13 @@ class GradioInterface:
                     bot[-1][1] = history[-1]["content"]
                     yield history, bot
 
-        def add_text(history, bot, text, image, video, audio, pdf_file):
+        def add_text(history, bot, text, image, video, audio):
             logger.debug(
-                "Add text, text: %s, image: %s, video: %s, audio: %s, pdf: %s",
+                "Add text, text: %s, image: %s, video: %s, audio: %s",
                 text,
                 image,
                 video,
                 audio,
-                pdf_file,
             )
             
             # Handle PDF file - send directly to MinerU VLM (no conversion needed)
