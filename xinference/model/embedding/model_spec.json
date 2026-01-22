@@ -1275,7 +1275,9 @@
     "virtualenv": {
       "packages": [
         "sentence_transformers",
-        "transformers==4.51.3"
+        "transformers==4.51.3",
+        "#system_torch#",
+        "#system_torchvision#"
       ]
     },
     "model_specs": [
@@ -1297,7 +1299,7 @@
         }
       }
     ],
-    "updated_at": 1766473194,
+    "updated_at": 1768188160,
     "featured": false
   },
   {
@@ -1312,7 +1314,9 @@
     "virtualenv": {
       "packages": [
         "sentence_transformers",
-        "transformers==4.51.3"
+        "transformers==4.51.3",
+        "#system_torch#",
+        "#system_torchvision#"
       ]
     },
     "model_specs": [
@@ -1334,7 +1338,46 @@
         }
       }
     ],
-    "updated_at": 1766473256,
+    "updated_at": 1768188140,
     "featured": false
+  },
+  {
+    "version": 2,
+    "model_name": "Qwen3-VL-Embedding-2B",
+    "dimensions": 2048,
+    "max_tokens": 8192,
+    "language": [
+      "zh",
+      "en"
+    ],
+    "model_specs": [
+      {
+        "model_format": "pytorch",
+        "model_src": {
+          "huggingface": {
+            "model_id": "Qwen/Qwen3-VL-Embedding-2B",
+            "model_revision": "929a0c31d84149ec61d4594889136e0c663af1a6",
+            "quantizations": [
+              "none"
+            ]
+          },
+          "modelscope": {
+            "model_id": "Qwen/Qwen3-VL-Embedding-2B",
+            "quantizations": [
+              "none"
+            ]
+          }
+        }
+      }
+    ],
+    "virtualenv": {
+      "packages": [
+        "transformers==4.57.1",
+        "qwen-vl-utils==0.0.11",
+        "Pillow"
+      ]
+    },
+    "featured": true,
+    "updated_at": 1768556847
   }
 ]
