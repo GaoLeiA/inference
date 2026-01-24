@@ -134,7 +134,9 @@ class VirtualEnvSettings(BaseModel):
     packages: List[str]
     inherit_pip_config: bool = True
     index_url: Optional[str] = None
-    extra_index_url: Optional[str] = None
+    extra_index_url: Optional[Union[str, List[str]]] = None
     find_links: Optional[str] = None
     trusted_host: Optional[str] = None
     no_build_isolation: Optional[bool] = None
+    index_strategy: Optional[str] = None
+
